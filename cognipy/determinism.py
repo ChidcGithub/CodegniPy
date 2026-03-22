@@ -10,7 +10,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import (
-    Any, List, Dict, Type, TypeVar, TYPE_CHECKING
+    Any, List, Dict, Type, TypeVar, Optional, TYPE_CHECKING
 )
 from pydantic import BaseModel, ValidationError as PydanticValidationError
 
@@ -72,11 +72,11 @@ class PrimitiveConstraint(TypeConstraint):
         self.min_length = min_length
         self.max_length = max_length
         self.pattern = pattern
-    
+
     def validate(self, value: Any) -> ValidationResult:
-        errors = []
-        warnings = []
-        
+        errors: List[str] = []
+        warnings: List[str] = []
+
         # 类型检查
         if not isinstance(value, self.expected_type):
             # 尝试类型转换
@@ -222,16 +222,16 @@ class SchemaConstraint(TypeConstraint):
 
 class ListConstraint(TypeConstraint):
     """列表约束"""
-    
-    def __init__(self, item_constraint: TypeConstraint = None, min_length=None, max_length=None):
+
+    def __init__(self, item_constraint: Optional[TypeConstraint] = None, min_length=None, max_length=None):
         self.item_constraint = item_constraint
         self.min_length = min_length
         self.max_length = max_length
-    
+
     def validate(self, value: Any) -> ValidationResult:
-        errors = []
-        warnings = []
-        
+        errors: List[str] = []
+        warnings: List[str] = []
+
         # 解析 JSON 字符串
         if isinstance(value, str):
             try:
@@ -290,7 +290,7 @@ class MockResponse:
     """模拟响应"""
     prompt: str
     response: str
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: Optional[Dict[str, Any]] = field(default_factory=dict)
 
 
 class Simulator:
@@ -345,7 +345,7 @@ class Simulator:
         
         raise ValueError(f"未找到匹配的回放响应: {prompt[:50]}...")
     
-    def record(self, prompt: str, response: str, metadata: Dict[str, Any] = None):
+    def record(self, prompt: str, response: str, metadata: Optional[Dict[str, Any]] = None):
         """记录响应"""
         self._recordings.append(MockResponse(
             prompt=prompt,
@@ -387,10 +387,10 @@ class HallucinationCheck:
 class HallucinationDetector:
     """
     幻觉检测器
-    
+
     检测 LLM 输出中可能存在的幻觉内容。
     """
-    
+
     def __init__(self):
         self._patterns = [
             # 常见幻觉模式
@@ -400,56 +400,55 @@ class HallucinationDetector:
             (r'研究表明|研究显示|据统计', "未引用具体来源的声明"),
             (r'众所周知|显然|毫无疑问', "可能缺乏证据支持的断言"),
         ]
-    
-    def check(self, response: str, context: Dict[str, Any] = None) -> HallucinationCheck:
+
+    def check(self, response: str, context: Optional[Dict[str, Any]] = None) -> HallucinationCheck:
         """
         检查响应中的幻觉
-        
+
         参数:
             response: LLM 响应文本
             context: 可选的上下文信息
-        
         返回:
             HallucinationCheck 对象
         """
-        reasons = []
-        suggestions = []
+        reasons: List[str] = []
+        suggestions: List[str] = []
         hallucination_score = 0.0
-        
+
         # 模式检查
         for pattern, description in self._patterns:
             matches = re.findall(pattern, response)
             if matches:
                 reasons.append(f"{description}: 发现 {len(matches)} 处")
                 hallucination_score += 0.2 * len(matches)
-        
+
         # 数值一致性检查
         numbers = re.findall(r'\b\d+(?:\.\d+)?\b', response)
         if len(numbers) > 5:
             reasons.append("包含大量数字，请验证准确性")
             hallucination_score += 0.1
-        
+
         # 引用检查
         if '引用' in response or '参考' in response:
             if not re.search(r'\[\d+\]|\(\d{4}\)|"([^"]+)"', response):
                 reasons.append("提到引用但未提供具体引用格式")
                 hallucination_score += 0.15
-        
+
         # 计算置信度
         confidence = min(hallucination_score, 1.0)
         is_hallucination = confidence > 0.3
-        
+
         if is_hallucination:
             suggestions.append("建议验证响应中的具体细节")
             suggestions.append("考虑使用反思循环进行二次确认")
-        
+
         return HallucinationCheck(
             is_hallucination=is_hallucination,
             confidence=confidence,
             reasons=reasons,
             suggestions=suggestions
         )
-    
+
     def add_pattern(self, pattern: str, description: str):
         """添加自定义幻觉检测模式"""
         self._patterns.append((pattern, description))
@@ -458,27 +457,47 @@ class HallucinationDetector:
 # ============ 确定性认知调用 ============
 
 def deterministic_call(
+
     prompt: str,
+
     constraint: TypeConstraint,
-    context: "CognitiveContext" = None,
+
+    context: Optional["CognitiveContext"] = None,
+
     *,
+
     max_attempts: int = 3,
+
     use_reflection: bool = False,
-    simulator: Simulator = None
+
+    simulator: Optional[Simulator] = None
+
 ) -> ValidationResult:
+
     """
+
     带类型约束的确定性认知调用
-    
+
+
+
     参数:
+
         prompt: 提示文本
+
         constraint: 类型约束
+
         context: 认知上下文
+
         max_attempts: 最大尝试次数
+
         use_reflection: 是否使用反思
+
         simulator: 模拟器（用于测试）
-    
+
     返回:
+
         ValidationResult 对象
+
     """
     from .runtime import cognitive_call
     from .reflection import with_reflection

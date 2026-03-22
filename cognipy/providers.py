@@ -66,7 +66,7 @@ class BaseProvider(ABC):
         pass
     
     @abstractmethod
-    async def stream_async(
+    def stream_async(
         self,
         messages: List[Dict[str, str]],
         **kwargs

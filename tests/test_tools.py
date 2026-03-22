@@ -16,29 +16,29 @@ from cognipy.tools import (
 
 class TestToolParameter:
     """ToolParameter 测试"""
-    
+
     def test_parameter_creation(self):
         """测试参数创建"""
         param = ToolParameter(
             name="city",
-            type="string",
+            param_type="string",
             description="城市名称",
             required=True
         )
         assert param.name == "city"
-        assert param.type == "string"
+        assert param.param_type == "string"
         assert param.required is True
-    
+
     def test_parameter_to_json_schema(self):
         """测试转换为 JSON Schema"""
         param = ToolParameter(
             name="count",
-            type="integer",
+            param_type="integer",
             description="数量",
             enum=[1, 2, 3]
         )
         schema = param.to_json_schema()
-        
+
         assert schema["type"] == "integer"
         assert schema["description"] == "数量"
         assert schema["enum"] == [1, 2, 3]

@@ -26,16 +26,16 @@ class ToolType(Enum):
 class ToolParameter:
     """工具参数定义"""
     name: str
-    type: str
+    param_type: str
     description: str = ""
     required: bool = True
     enum: Optional[List[str]] = None
     default: Any = None
-    
+
     def to_json_schema(self) -> dict:
         """转换为 JSON Schema"""
-        schema = {
-            "type": self.type,
+        schema: Dict[str, Any] = {
+            "type": self.param_type,
             "description": self.description
         }
         if self.enum:
@@ -154,7 +154,7 @@ class ToolRegistry:
                 
                 parameters.append(ToolParameter(
                     name=param_name,
-                    type=param_type,
+                    param_type=param_type,
                     description=f"参数 {param_name}",
                     required=required,
                     default=default
@@ -172,9 +172,9 @@ class ToolRegistry:
             @wraps(fn)
             def wrapper(*args, **kwargs):
                 return fn(*args, **kwargs)
-            
-            wrapper._tool_definition = tool
-            
+
+            wrapper._tool_definition = tool  # type: ignore[attr-defined]
+
             return wrapper
         
         # 支持 @registry.register 和 @registry.register() 两种用法
@@ -293,10 +293,10 @@ def tool(
             param_type = ToolRegistry._python_type_to_json(hints.get(param_name, str))
             required = param.default is inspect.Parameter.empty
             default = None if required else param.default
-            
+
             parameters.append(ToolParameter(
                 name=param_name,
-                type=param_type,
+                param_type=param_type,
                 description=f"参数 {param_name}",
                 required=required,
                 default=default
@@ -308,9 +308,9 @@ def tool(
             parameters=parameters,
             handler=func
         )
-        
-        func._tool_definition = tool_def
-        
+
+        func._tool_definition = tool_def  # type: ignore[attr-defined]
+
         return func
     
     return decorator
@@ -374,7 +374,7 @@ def call_with_tools(
             if t.handler:
                 tool_handlers[t.name] = t.handler
         elif hasattr(t, '_tool_definition'):
-            td = t._tool_definition
+            td = t._tool_definition  # type: ignore[attr-defined]
             tool_defs.append(td)
             tool_handlers[td.name] = t
         elif callable(t):
@@ -393,16 +393,16 @@ def call_with_tools(
         base_url=config.base_url
     )
     
-    messages = []
+    messages: List[Dict[str, Any]] = []
     if ctx:
         messages.extend(ctx.get_memory())
     messages.append({"role": "user", "content": prompt})
-    
+
     openai_tools = [td.to_openai_tool() for td in tool_defs]
-    
+
     iteration = 0
     while iteration < max_iterations:
-        response = client.chat.completions.create(
+        response = client.chat.completions.create(  # type: ignore[call-overload]
             model=config.model,
             messages=messages,
             tools=openai_tools,
@@ -456,11 +456,11 @@ def call_with_tools(
     # 达到最大迭代次数，返回最后响应
     final_response = client.chat.completions.create(
         model=config.model,
-        messages=messages,
+        messages=messages,  # type: ignore[arg-type]
         temperature=config.temperature,
         max_tokens=config.max_tokens
     )
-    
+
     return final_response.choices[0].message.content or ""
 
 

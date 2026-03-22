@@ -44,7 +44,7 @@ class StreamResult:
 def _stream_openai(
     config: LLMConfig,
     prompt: str,
-    memory: list = None,
+    memory: Optional[list] = None,
     **kwargs
 ) -> Iterator[StreamChunk]:
     """使用 OpenAI API 进行流式调用"""
@@ -52,13 +52,13 @@ def _stream_openai(
         import openai
     except ImportError:
         raise ImportError("需要安装 openai 包。运行: pip install openai")
-    
+
     client = openai.OpenAI(
         api_key=config.api_key,
         base_url=config.base_url
     )
-    
-    messages = []
+
+    messages: List = []
     if memory:
         messages.extend(memory)
     messages.append({"role": "user", "content": prompt})
@@ -112,7 +112,7 @@ def _stream_openai(
 async def _stream_openai_async(
     config: LLMConfig,
     prompt: str,
-    memory: list = None,
+    memory: Optional[list] = None,
     **kwargs
 ) -> AsyncIterator[StreamChunk]:
     """使用 OpenAI API 进行异步流式调用"""
@@ -120,13 +120,13 @@ async def _stream_openai_async(
         from openai import AsyncOpenAI
     except ImportError:
         raise ImportError("需要安装 openai 包。运行: pip install openai")
-    
+
     client = AsyncOpenAI(
         api_key=config.api_key,
         base_url=config.base_url
     )
-    
-    messages = []
+
+    messages: List = []
     if memory:
         messages.extend(memory)
     messages.append({"role": "user", "content": prompt})

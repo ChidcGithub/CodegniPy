@@ -6,6 +6,7 @@ AST 转换器模块
 
 import ast
 import types
+from typing import Optional
 
 
 class CognitiveTransformer(ast.NodeTransformer):
@@ -21,16 +22,16 @@ class CognitiveTransformer(ast.NodeTransformer):
     def __init__(self, context_name: str = "__cognitive_context__"):
         super().__init__()
         self.context_name = context_name
-    
-    def visit_Invert(self, node: ast.UnaryOp) -> ast.Call:
+
+    def _transform_invert(self, node: ast.UnaryOp) -> ast.Call:
         """
         处理 `~` 操作符（一元取反操作符被借用为认知操作符）
-        
+
         将 ~expr 转换为 cognitive_call(expr)
         """
         # 递归处理嵌套的节点
         operand = self.visit(node.operand)
-        
+
         # 构建 cognitive_call(...) 调用
         call = ast.Call(
             func=ast.Attribute(
@@ -46,22 +47,22 @@ class CognitiveTransformer(ast.NodeTransformer):
                 )
             ]
         )
-        
+
         # 设置行号信息用于调试
         ast.copy_location(call, node)
         ast.fix_missing_locations(call)
-        
+
         return call
-    
+
     def visit_UnaryOp(self, node: ast.UnaryOp) -> ast.AST:
         """
         处理一元操作
-        
+
         只有 `~` 操作符需要特殊处理，其他保持原样。
         """
         if isinstance(node.op, ast.Invert):
-            return self.visit_Invert(node)
-        
+            return self._transform_invert(node)
+
         # 其他一元操作符保持原样
         return self.generic_visit(node)
 
@@ -117,38 +118,38 @@ def compile_cognipy(
 
 def exec_cognipy(
     source: str,
-    globals_: dict = None,
-    locals_: dict = None,
+    globals_: Optional[dict] = None,
+    locals_: Optional[dict] = None,
     filename: str = "<cognipy>"
 ) -> dict:
     """
     执行 CogniPy 源代码。
-    
+
     参数:
         source: Python 源代码字符串
         globals_: 全局命名空间
         locals_: 局部命名空间
         filename: 文件名
-    
+
     返回:
         执行后的局部命名空间
     """
     from .runtime import CognitiveContext
-    
+
     if globals_ is None:
         globals_ = {}
     if locals_ is None:
         locals_ = {}
-    
+
     # 确保 cognipy 模块可用
     import cognipy
     globals_['cognipy'] = cognipy
-    
+
     # 创建上下文变量
     globals_['__cognitive_context__'] = CognitiveContext.get_current()
-    
+
     # 编译并执行
     code = compile_cognipy(source, filename)
     exec(code, globals_, locals_)
-    
+
     return locals_

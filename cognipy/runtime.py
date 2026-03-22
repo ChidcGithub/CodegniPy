@@ -80,32 +80,31 @@ class CognitiveContext:
             max_tokens=self.max_tokens
         )
     
-    def add_to_memory(self, role: str, content: str):
+    def add_to_memory(self, role: str, content: str) -> None:
         """添加到会话记忆"""
-        from .memory import MessageRole
+        from .memory import Message, MessageRole
         role_enum = MessageRole(role) if isinstance(role, str) else role
-        self.memory_store.add(
-            self.memory_store.add.__self__.__class__.__module__  # 获取 store 类型
-        )
         # 直接操作内存存储
-        if hasattr(self.memory_store, '_messages'):
-            from .memory import Message
+        if self.memory_store is not None and hasattr(self.memory_store, '_messages'):
             self.memory_store._messages.append(Message(role_enum, content))
     
     def get_memory(self) -> list:
         """获取会话记忆（OpenAI 格式）"""
-        return self.memory_store.to_openai_messages()
+        if self.memory_store is not None:
+            return self.memory_store.to_openai_messages()
+        return []
     
-    def get_memory_store(self) -> "MemoryStore":
+    def get_memory_store(self) -> Optional["MemoryStore"]:
         """获取记忆存储对象"""
         return self.memory_store
     
     def clear_memory(self) -> None:
         """清空会话记忆"""
-        self.memory_store.clear()
+        if self.memory_store is not None:
+            self.memory_store.clear()
 
 
-def _call_openai(config: LLMConfig, prompt: str, memory: list = None) -> str:
+def _call_openai(config: LLMConfig, prompt: str, memory: Optional[list] = None) -> str:
     """调用 OpenAI API"""
     try:
         import openai
@@ -119,7 +118,7 @@ def _call_openai(config: LLMConfig, prompt: str, memory: list = None) -> str:
         base_url=config.base_url
     )
     
-    messages = []
+    messages: list = []
     if memory:
         messages.extend(memory)
     messages.append({"role": "user", "content": prompt})
@@ -130,8 +129,8 @@ def _call_openai(config: LLMConfig, prompt: str, memory: list = None) -> str:
         temperature=config.temperature,
         max_tokens=config.max_tokens
     )
-    
-    return response.choices[0].message.content
+
+    return response.choices[0].message.content or ""
 
 
 def cognitive_call(

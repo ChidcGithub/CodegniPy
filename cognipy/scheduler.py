@@ -117,13 +117,13 @@ class CognitiveScheduler:
         asyncio.run(main())
     """
     
-    def __init__(self, config: SchedulerConfig = None):
+    def __init__(self, config: Optional[SchedulerConfig] = None):
         self.config = config or SchedulerConfig()
-        self._tasks: Dict[str, ScheduledTask] = {}
-        self._pending_queue: asyncio.PriorityQueue = None
+        self._tasks: Dict[str, ScheduledTask[Any]] = {}
+        self._pending_queue: Optional[asyncio.PriorityQueue[ScheduledTask[Any]]] = None
         self._running_count: int = 0
         self._counter: int = 0
-        self._lock: asyncio.Lock = None
+        self._lock: Optional[asyncio.Lock] = None
         self._started: bool = False
     
     async def _ensure_initialized(self):
@@ -140,11 +140,11 @@ class CognitiveScheduler:
     
     async def submit(
         self,
-        coro_or_factory: Union[Coroutine, Callable[[], Coroutine]],
-        priority: Priority = None,
-        timeout: float = None,
-        max_retries: int = None,
-        callback: Callable[[T], None] = None
+        coro_or_factory: Union[Coroutine[Any, Any, T], Callable[[], Coroutine[Any, Any, T]]],
+        priority: Optional[Priority] = None,
+        timeout: Optional[float] = None,
+        max_retries: Optional[int] = None,
+        callback: Optional[Callable[[T], None]] = None
     ) -> str:
         """
         提交异步任务
@@ -187,31 +187,34 @@ class CognitiveScheduler:
             max_retries=effective_max_retries,
             callback=callback
         )
-        
+
         # 存储初始协程
-        task._current_coro = coro
-        
+        task._current_coro = coro  # type: ignore[attr-defined]
+
         self._tasks[task_id] = task
+        assert self._pending_queue is not None
         await self._pending_queue.put(task)
-        
+
         # 尝试处理队列
         asyncio.create_task(self._process_queue())
-        
+
         return task_id
-    
+
     async def _process_queue(self):
         """处理任务队列"""
         await self._ensure_initialized()
-        
+
+        assert self._lock is not None
         async with self._lock:
             while self._running_count < self.config.max_concurrent:
+                assert self._pending_queue is not None
                 if self._pending_queue.empty():
                     break
-                
+
                 task = await self._pending_queue.get()
                 if task.status == TaskStatus.CANCELLED:
                     continue
-                
+
                 asyncio.create_task(self._execute_task(task))
                 self._running_count += 1
     
@@ -256,15 +259,16 @@ class CognitiveScheduler:
         except Exception as e:
             task.status = TaskStatus.FAILED
             task.error = e
-            
+
             # 重试
             if task.retries < task.max_retries:
                 await self._retry_task(task)
-        
+
         finally:
+            assert self._lock is not None
             async with self._lock:
                 self._running_count -= 1
-            
+
             # 继续处理队列
             await self._process_queue()
     
@@ -272,18 +276,19 @@ class CognitiveScheduler:
         """重试任务"""
         task.retries += 1
         task.status = TaskStatus.PENDING
-        
+
         # 创建新的协程实例
-        task._current_coro = task.create_coro()
-        
+        task._current_coro = task.create_coro()  # type: ignore[attr-defined]
+
         # 等待延迟
         delay = self.config.retry_policy.get_delay(task.retries - 1)
         await asyncio.sleep(delay)
-        
+
         # 重新加入队列
+        assert self._pending_queue is not None
         await self._pending_queue.put(task)
     
-    async def get_result(self, task_id: str, timeout: float = None) -> Any:
+    async def get_result(self, task_id: str, timeout: Optional[float] = None) -> Any:
         """
         获取任务结果
         
@@ -336,7 +341,7 @@ class CognitiveScheduler:
         task = self._tasks.get(task_id)
         return task.status if task else None
     
-    async def wait_all(self, timeout: float = None) -> Dict[str, Any]:
+    async def wait_all(self, timeout: Optional[float] = None) -> Dict[str, Any]:
         """等待所有任务完成"""
         start_time = time.time()
         
@@ -358,11 +363,11 @@ class CognitiveScheduler:
     
     def stats(self) -> Dict[str, Any]:
         """获取调度器统计信息"""
-        statuses = {}
+        statuses: Dict[str, int] = {}
         for task in self._tasks.values():
             status = task.status.value
             statuses[status] = statuses.get(status, 0) + 1
-        
+
         return {
             "total_tasks": len(self._tasks),
             "running": self._running_count,
@@ -375,11 +380,11 @@ class CognitiveScheduler:
 
 async def async_cognitive_call(
     prompt: str,
-    context: CognitiveContext = None,
+    context: Optional[CognitiveContext] = None,
     *,
-    model: str = None,
-    temperature: float = None,
-    config: LLMConfig = None
+    model: Optional[str] = None,
+    temperature: Optional[float] = None,
+    config: Optional[LLMConfig] = None
 ) -> str:
     """
     异步认知调用
@@ -428,8 +433,8 @@ async def _call_openai_async(config: LLMConfig, prompt: str) -> str:
         temperature=config.temperature,
         max_tokens=config.max_tokens
     )
-    
-    return response.choices[0].message.content
+
+    return response.choices[0].message.content or ""
 
 
 # ============ 便捷函数 ============
@@ -451,24 +456,24 @@ def run_async(coro: Coroutine) -> Any:
 
 async def batch_call(
     prompts: List[str],
-    context: CognitiveContext = None,
+    context: Optional[CognitiveContext] = None,
     max_concurrent: int = 5,
     timeout: float = 60.0
-) -> List[str]:
+) -> List[Optional[str]]:
     """
     批量异步调用
-    
+
     参数:
         prompts: 提示列表
         context: 认知上下文
         max_concurrent: 最大并发数
         timeout: 单个调用超时
-    
+
     返回:
         响应列表（与输入顺序对应）
     """
     scheduler = CognitiveScheduler(SchedulerConfig(max_concurrent=max_concurrent))
-    
+
     # 提交所有任务
     task_ids = []
     for prompt in prompts:
@@ -477,17 +482,17 @@ async def batch_call(
             timeout=timeout
         )
         task_ids.append(task_id)
-    
+
     # 等待所有完成
     await scheduler.wait_all()
-    
+
     # 收集结果
-    results = []
+    results: List[Optional[str]] = []
     for task_id in task_ids:
         task = scheduler._tasks[task_id]
         if task.status == TaskStatus.COMPLETED:
             results.append(task.result)
         else:
             results.append(None)  # 或抛出异常
-    
+
     return results

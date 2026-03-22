@@ -11,23 +11,23 @@ import inspect
 from .runtime import cognitive_call
 
 
-def cognitive(func: Callable = None, *, model: Optional[str] = None) -> Callable:
+def cognitive(func: Optional[Callable] = None, *, model: Optional[str] = None) -> Callable:
     """
     Decorator: Mark a function as cognitive, implemented by LLM.
-    
+
     The function's docstring serves as prompt template,
     and the signature is used for input validation and output parsing.
-    
+
     Args:
         func: The function to decorate
         model: Specify the model to use (optional)
-    
+
     Examples:
         @cognitive
         def summarize(text: str) -> str:
             '''Summarize the key points of this text in no more than 3 sentences.'''
             pass
-        
+
         @cognitive(model="gpt-4")
         def translate(text: str, target_lang: str = "English") -> str:
             '''Translate the text to {target_lang}.'''
@@ -38,30 +38,30 @@ def cognitive(func: Callable = None, *, model: Optional[str] = None) -> Callable
         sig = inspect.signature(fn)
         hints = get_type_hints(fn) if hasattr(fn, '__annotations__') else {}
         docstring = fn.__doc__ or f"执行函数 {fn.__name__}"
-        
+
         @wraps(fn)
         def wrapper(*args, **kwargs):
             # 绑定参数
             bound = sig.bind(*args, **kwargs)
             bound.apply_defaults()
-            
+
             # 构建提示
             prompt = _build_prompt(docstring, bound.arguments)
-            
+
             # 调用 LLM
             result = cognitive_call(prompt, model=model)
-            
+
             # 类型转换（如果指定了返回类型）
             return_type = hints.get('return')
             if return_type and return_type is not str:
                 result = _convert_result(result, return_type)
-            
+
             return result
-        
+
         # 标记为认知函数
-        wrapper._is_cognitive = True
-        wrapper._original_func = fn
-        
+        wrapper._is_cognitive = True  # type: ignore[attr-defined]
+        wrapper._original_func = fn  # type: ignore[attr-defined]
+
         return wrapper
     
     # 支持 @cognitive 和 @cognitive(...) 两种用法

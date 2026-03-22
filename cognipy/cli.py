@@ -7,6 +7,7 @@ CogniPy 命令行接口
 import argparse
 import sys
 from pathlib import Path
+from typing import Optional
 
 from .transformer import transform_code
 from .runtime import CognitiveContext
@@ -49,7 +50,7 @@ def create_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def run_file(filepath: str, model: str, api_key: str = None):
+def run_file(filepath: str, model: str, api_key: Optional[str] = None):
     """运行 CogniPy 文件"""
     path = Path(filepath)
     
