@@ -15,10 +15,8 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import (
     Any, Optional, Callable, Coroutine, List, Dict, 
-    TypeVar, Generic, Awaitable, Union
+    TypeVar, Generic, Union
 )
-from concurrent.futures import TimeoutError as AsyncTimeoutError
-import functools
 
 from .runtime import LLMConfig, CognitiveContext
 
@@ -171,7 +169,8 @@ class CognitiveScheduler:
         if asyncio.iscoroutine(coro_or_factory):
             # 直接传入协程，无法重试
             coro = coro_or_factory
-            coro_factory = lambda: coro
+            def coro_factory():
+                return coro
             effective_max_retries = 0  # 无法重试
         else:
             # 传入工厂函数
@@ -239,7 +238,7 @@ class CognitiveScheduler:
             if task.callback:
                 try:
                     task.callback(result)
-                except Exception as e:
+                except Exception:
                     # 回调错误不影响任务状态
                     pass
                     

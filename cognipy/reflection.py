@@ -5,10 +5,9 @@ CogniPy 反思模块
 """
 
 from dataclasses import dataclass, field
-from typing import Optional, Callable, List, Any
+from typing import Optional, Callable, List
 from enum import Enum
 
-from .memory import MemoryStore, Message, MessageRole
 from .runtime import cognitive_call, CognitiveContext
 
 

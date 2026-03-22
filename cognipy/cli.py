@@ -6,7 +6,6 @@ CogniPy 命令行接口
 
 import argparse
 import sys
-import os
 from pathlib import Path
 
 from .transformer import transform_code
@@ -121,7 +120,7 @@ def start_repl(model: str):
                 exec(code_obj, self.locals)
             except SystemExit:
                 raise
-            except:
+            except Exception:
                 self.showtraceback()
             
             return False

@@ -5,11 +5,11 @@ CogniPy 运行时核心模块
 """
 
 from dataclasses import dataclass, field
-from typing import Any, Optional, Callable, Union, TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING
 import os
 
 if TYPE_CHECKING:
-    from .memory import MemoryStore, InMemoryStore, FileStore
+    from .memory import MemoryStore
 
 
 @dataclass

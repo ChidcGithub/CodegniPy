@@ -7,7 +7,7 @@ CogniPy 记忆存储模块
 import json
 import time
 from abc import ABC, abstractmethod
-from dataclasses import dataclass, field, asdict
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional, List, Dict, Any
 from enum import Enum

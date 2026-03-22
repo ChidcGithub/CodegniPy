@@ -6,7 +6,7 @@ CogniPy 工具调用模块
 
 import json
 import inspect
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import (
     Any, Callable, Dict, List, Optional, Type, Union,
     get_type_hints, get_origin, get_args
@@ -14,7 +14,7 @@ from typing import (
 from enum import Enum
 from functools import wraps
 
-from .runtime import LLMConfig, CognitiveContext, cognitive_call
+from .runtime import LLMConfig, CognitiveContext
 
 
 class ToolType(Enum):

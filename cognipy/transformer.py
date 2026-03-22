@@ -6,7 +6,6 @@ AST 转换器模块
 
 import ast
 import types
-from typing import Optional
 
 
 class CognitiveTransformer(ast.NodeTransformer):
@@ -112,8 +111,6 @@ def compile_cognipy(
     返回:
         编译后的代码对象
     """
-    import types
-    
     tree = transform_code(source, filename)
     return compile(tree, filename, mode)
 

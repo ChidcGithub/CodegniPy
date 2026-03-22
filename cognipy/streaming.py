@@ -5,7 +5,7 @@ CogniPy 流式响应模块
 """
 
 from dataclasses import dataclass, field
-from typing import AsyncIterator, Iterator, Optional, Callable, Any, List
+from typing import AsyncIterator, Iterator, Optional, Callable, List
 from enum import Enum
 import asyncio
 

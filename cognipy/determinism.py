@@ -10,8 +10,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import (
-    Any, Optional, List, Dict, Type, Callable, 
-    Generic, TypeVar, get_origin, get_args, Union, TYPE_CHECKING
+    Any, List, Dict, Type, TypeVar, TYPE_CHECKING
 )
 from pydantic import BaseModel, ValidationError as PydanticValidationError
 
@@ -82,7 +81,7 @@ class PrimitiveConstraint(TypeConstraint):
         if not isinstance(value, self.expected_type):
             # 尝试类型转换
             try:
-                if self.expected_type == bool:
+                if self.expected_type is bool:
                     if isinstance(value, str):
                         if value.lower() in ('true', 'yes', '1'):
                             value = True
@@ -482,7 +481,7 @@ def deterministic_call(
         ValidationResult 对象
     """
     from .runtime import cognitive_call
-    from .reflection import with_reflection, ReflectionStatus
+    from .reflection import with_reflection
     
     # 构建带约束的提示
     constrained_prompt = f"{prompt}\n\n约束: {constraint.to_prompt()}\n\n请严格按照约束要求回答。"

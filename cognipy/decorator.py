@@ -8,7 +8,7 @@ from functools import wraps
 from typing import Callable, get_type_hints, Any, Optional
 import inspect
 
-from .runtime import cognitive_call, CognitiveContext
+from .runtime import cognitive_call
 
 
 def cognitive(func: Callable = None, *, model: Optional[str] = None) -> Callable:

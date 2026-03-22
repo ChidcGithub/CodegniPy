@@ -10,7 +10,6 @@ from typing import Optional, List, Dict, Any, AsyncIterator, Iterator
 from enum import Enum
 import json
 
-from .runtime import LLMConfig
 from .streaming import StreamChunk, StreamStatus
 
 
