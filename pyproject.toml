@@ -1,0 +1,62 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cognipy"
+version = "0.1.0"
+description = "AI 原生的 Python 语言扩展 - 让非确定性 AI 成为 Python 一等公民"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.10"
+authors = [
+    { name = "CogniPy Team" }
+]
+keywords = [
+    "ai",
+    "llm",
+    "openai",
+    "language-extension",
+    "cognitive-computing"
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+dependencies = [
+    "openai>=1.0.0",
+    "pydantic>=2.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-asyncio>=0.21.0",
+]
+anthropic = [
+    "anthropic>=0.18.0",
+]
+
+[project.scripts]
+cognipy = "cognipy.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/cognipy/cognipy"
+Documentation = "https://github.com/cognipy/cognipy#readme"
+Repository = "https://github.com/cognipy/cognipy"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["cognipy*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+addopts = "-v"
