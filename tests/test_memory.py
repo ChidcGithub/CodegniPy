@@ -1,5 +1,5 @@
 """
-CogniPy Phase 2 测试模块
+Codegnipy Phase 2 测试模块
 
 测试记忆存储和反思功能。
 """
@@ -9,7 +9,7 @@ import tempfile
 import os
 from pathlib import Path
 
-from cognipy.memory import (
+from codegnipy.memory import (
     MemoryStore,
     InMemoryStore,
     FileStore,
@@ -17,12 +17,12 @@ from cognipy.memory import (
     MessageRole,
     ContextCompressor
 )
-from cognipy.reflection import (
+from codegnipy.reflection import (
     Reflector,
     ReflectionStatus,
     ReflectionResult
 )
-from cognipy import CognitiveContext
+from codegnipy import CognitiveContext
 
 
 class TestMessage:

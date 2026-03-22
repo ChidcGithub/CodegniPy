@@ -1,7 +1,7 @@
 """
-CogniPy 命令行接口
+Codegnipy 命令行接口
 
-提供 `cognipy run` 和 `cognipy repl` 命令。
+提供 `codegnipy run` 和 `codegnipy repl` 命令。
 """
 
 import argparse
@@ -11,14 +11,14 @@ from typing import Optional
 
 from .transformer import transform_code
 from .runtime import CognitiveContext
-import cognipy
+import codegnipy
 
 
 def create_parser() -> argparse.ArgumentParser:
     """创建命令行解析器"""
     parser = argparse.ArgumentParser(
-        prog="cognipy",
-        description="CogniPy - AI 原生的 Python 语言扩展"
+        prog="codegnipy",
+        description="Codegnipy - AI 原生的 Python 语言扩展"
     )
     
     subparsers = parser.add_subparsers(dest="command", help="可用命令")
@@ -51,7 +51,7 @@ def create_parser() -> argparse.ArgumentParser:
 
 
 def run_file(filepath: str, model: str, api_key: Optional[str] = None):
-    """运行 CogniPy 文件"""
+    """运行 Codegnipy 文件"""
     path = Path(filepath)
     
     if not path.exists():
@@ -70,7 +70,7 @@ def run_file(filepath: str, model: str, api_key: Optional[str] = None):
         globals_ = {
             "__name__": "__main__",
             "__file__": str(path.absolute()),
-            "cognipy": cognipy,
+            "codegnipy": codegnipy,
             "__cognitive_context__": CognitiveContext.get_current()
         }
         
@@ -90,7 +90,7 @@ def start_repl(model: str):
     """启动交互式 REPL"""
     import code
     
-    print("CogniPy REPL")
+    print("Codegnipy REPL")
     print(f"模型: {model}")
     print("输入 Python 代码，~\"prompt\" 语法将调用 LLM")
     print("输入 exit() 或 Ctrl+D 退出\n")
@@ -101,7 +101,7 @@ def start_repl(model: str):
     
     # 准备 REPL 环境
     local_vars = {
-        "cognipy": cognipy,
+        "codegnipy": codegnipy,
         "__cognitive_context__": ctx
     }
     
@@ -143,7 +143,7 @@ def main():
     elif args.command == "repl":
         start_repl(args.model)
     elif args.command == "version":
-        print(f"CogniPy v{cognipy.__version__}")
+        print(f"Codegnipy v{codegnipy.__version__}")
     else:
         parser.print_help()
         sys.exit(1)

@@ -3,14 +3,14 @@ requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "cognipy"
+name = "codegnipy"
 version = "0.1.0"
 description = "AI 原生的 Python 语言扩展 - 让非确定性 AI 成为 Python 一等公民"
 readme = "README.md"
 license = {text = "MIT"}
 requires-python = ">=3.10"
 authors = [
-    { name = "CogniPy Team" }
+    { name = "Codegnipy Team" }
 ]
 keywords = [
     "ai",
@@ -45,18 +45,19 @@ anthropic = [
 ]
 
 [project.scripts]
-cognipy = "cognipy.cli:main"
+codegnipy = "codegnipy.cli:main"
 
 [project.urls]
-Homepage = "https://github.com/cognipy/cognipy"
-Documentation = "https://github.com/cognipy/cognipy#readme"
-Repository = "https://github.com/cognipy/cognipy"
+Homepage = "https://github.com/ChidcGithub/Codegnipy"
+Documentation = "https://github.com/ChidcGithub/Codegnipy#readme"
+Repository = "https://github.com/ChidcGithub/Codegnipy"
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["cognipy*"]
+include = ["codegnipy*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 python_files = ["test_*.py"]
+pythonpath = ["."]
 addopts = "-v"

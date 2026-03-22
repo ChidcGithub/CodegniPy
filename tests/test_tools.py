@@ -3,7 +3,7 @@
 """
 
 import pytest
-from cognipy.tools import (
+from codegnipy.tools import (
     ToolType,
     ToolParameter,
     ToolDefinition,

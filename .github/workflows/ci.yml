@@ -64,10 +64,10 @@ jobs:
           pip install ruff mypy
 
       - name: Run ruff
-        run: ruff check cognipy/ --output-format=github
+        run: ruff check codegnipy/ --output-format=github
 
       - name: Run mypy
-        run: mypy cognipy/ --ignore-missing-imports
+        run: mypy codegnipy/ --ignore-missing-imports
         continue-on-error: true
 
   build:
@@ -124,7 +124,7 @@ jobs:
       - name: Get version
         id: version
         run: |
-          VERSION=$(python -c "import sys; sys.path.insert(0, '.'); from cognipy import __version__; print(__version__)")
+          VERSION=$(python -c "import sys; sys.path.insert(0, '.'); from codegnipy import __version__; print(__version__)")
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Check if tag exists

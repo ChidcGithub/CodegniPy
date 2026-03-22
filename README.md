@@ -1,14 +1,14 @@
-# CogniPy
+# Codegnipy
 
-[![PyPI version](https://img.shields.io/pypi/v/cognipy.svg)](https://pypi.org/project/cognipy/)
-[![Python](https://img.shields.io/pypi/pyversions/cognipy.svg)](https://pypi.org/project/cognipy/)
-[![License](https://img.shields.io/github/license/ChidcGithub/CogniPy)](LICENSE)
-[![Build Status](https://github.com/ChidcGithub/CogniPy/actions/workflows/ci.yml/badge.svg)](https://github.com/ChidcGithub/CogniPy/actions/workflows/ci.yml)
-[![Coverage](https://img.shields.io/codecov/c/github/ChidcGithub/CogniPy.svg)](https://codecov.io/gh/ChidcGithub/CogniPy)
+[![PyPI version](https://img.shields.io/pypi/v/codegnipy.svg)](https://pypi.org/project/codegnipy/)
+[![Python](https://img.shields.io/pypi/pyversions/codegnipy.svg)](https://pypi.org/project/codegnipy/)
+[![License](https://img.shields.io/github/license/ChidcGithub/Codegnipy)](LICENSE)
+[![Build Status](https://github.com/ChidcGithub/Codegnipy/actions/workflows/ci.yml/badge.svg)](https://github.com/ChidcGithub/Codegnipy/actions/workflows/ci.yml)
+[![Coverage](https://img.shields.io/codecov/c/github/ChidcGithub/Codegnipy.svg)](https://codecov.io/gh/ChidcGithub/Codegnipy)
 
 **AI-Native Python Language Extension**
 
-CogniPy seamlessly integrates Large Language Models (LLMs) into Python, making non-deterministic AI capabilities a first-class citizen in your code. Write logic close to natural language while achieving production-grade performance and debuggability.
+Codegnipy seamlessly integrates Large Language Models (LLMs) into Python, making non-deterministic AI capabilities a first-class citizen in your code. Write logic close to natural language while achieving production-grade performance and debuggability.
 
 ## Features
 
@@ -22,13 +22,13 @@ CogniPy seamlessly integrates Large Language Models (LLMs) into Python, making n
 ## Installation
 
 ```bash
-pip install cognipy
+pip install codegnipy
 ```
 
 For development:
 
 ```bash
-pip install cognipy[dev]
+pip install codegnipy[dev]
 ```
 
 ## Quick Start
@@ -36,7 +36,7 @@ pip install cognipy[dev]
 ### The `~` Operator
 
 ```python
-from cognipy import CognitiveContext, cognitive_call
+from codegnipy import CognitiveContext, cognitive_call
 
 with CognitiveContext(api_key="your-api-key"):
     # Natural language prompts directly in code
@@ -47,7 +47,7 @@ with CognitiveContext(api_key="your-api-key"):
 ### The `@cognitive` Decorator
 
 ```python
-from cognipy import cognitive, CognitiveContext
+from codegnipy import cognitive, CognitiveContext
 
 @cognitive
 def summarize(text: str) -> str:
@@ -62,7 +62,7 @@ with CognitiveContext(api_key="your-api-key"):
 
 ```python
 import asyncio
-from cognipy import batch_call, CognitiveContext
+from codegnipy import batch_call, CognitiveContext
 
 async def main():
     prompts = [
@@ -79,7 +79,7 @@ asyncio.run(main())
 ### With Memory Persistence
 
 ```python
-from cognipy import CognitiveContext, FileStore
+from codegnipy import CognitiveContext, FileStore
 
 with CognitiveContext(
     api_key="your-api-key",
@@ -93,7 +93,7 @@ with CognitiveContext(
 ### With Type Constraints
 
 ```python
-from cognipy import PrimitiveConstraint, deterministic_call
+from codegnipy import PrimitiveConstraint, deterministic_call
 
 # Ensure LLM output is a valid integer between 0-100
 constraint = PrimitiveConstraint(
@@ -114,7 +114,7 @@ if result.status == "valid":
 ### With Reflection
 
 ```python
-from cognipy import CognitiveContext, with_reflection
+from codegnipy import CognitiveContext, with_reflection
 
 with CognitiveContext(api_key="your-api-key") as ctx:
     result = with_reflection(
@@ -203,7 +203,7 @@ CognitiveContext(
 ### Scheduler
 
 ```python
-from cognipy import CognitiveScheduler, Priority
+from codegnipy import CognitiveScheduler, Priority
 
 scheduler = CognitiveScheduler(
     max_concurrent=5,
@@ -225,7 +225,7 @@ result = await scheduler.get_result(task_id, timeout=10.0)
 ### Hallucination Detection
 
 ```python
-from cognipy import HallucinationDetector
+from codegnipy import HallucinationDetector
 
 detector = HallucinationDetector()
 check = detector.detect(llm_response)
@@ -241,14 +241,14 @@ print(check.issues)      # List of detected issues
 | Variable | Description |
 |----------|-------------|
 | `OPENAI_API_KEY` | OpenAI API key |
-| `COGNIPY_MODEL` | Default model to use |
-| `COGNIPY_TEMPERATURE` | Default temperature |
-| `COGNIPY_MAX_TOKENS` | Default max tokens |
+| `CODEGNIPY_MODEL` | Default model to use |
+| `CODEGNIPY_TEMPERATURE` | Default temperature |
+| `CODEGNIPY_MAX_TOKENS` | Default max tokens |
 
 ### Programmatic Configuration
 
 ```python
-from cognipy import CognitiveContext
+from codegnipy import CognitiveContext
 
 ctx = CognitiveContext(
     api_key="sk-...",
@@ -262,16 +262,16 @@ ctx = CognitiveContext(
 
 ```bash
 # Run a script with cognitive features
-cognipy run script.py
+codegnipy run script.py
 
 # Start interactive REPL
-cognipy repl
+codegnipy repl
 
 # Show version
-cognipy version
+codegnipy version
 
 # With options
-cognipy run script.py --model gpt-4 --api-key sk-...
+codegnipy run script.py --model gpt-4 --api-key sk-...
 ```
 
 ## Testing
@@ -283,7 +283,7 @@ cognipy run script.py --model gpt-4 --api-key sk-...
 pytest tests/ -v
 
 # With coverage
-pytest tests/ --cov=cognipy --cov-report=html
+pytest tests/ --cov=codegnipy --cov-report=html
 ```
 
 ### Simulation Mode
@@ -291,7 +291,7 @@ pytest tests/ --cov=cognipy --cov-report=html
 For testing without actual LLM calls:
 
 ```python
-from cognipy import Simulator, SimulationMode
+from codegnipy import Simulator, SimulationMode
 
 simulator = Simulator(mode=SimulationMode.MOCK)
 
@@ -311,8 +311,8 @@ simulator.load_recordings("recordings.json")
 ## Project Structure
 
 ```
-CogniPy/
-  cognipy/
+Codegnipy/
+  codegnipy/
     __init__.py          # Package exports
     runtime.py           # Core runtime (cognitive_call, CognitiveContext)
     decorator.py         # @cognitive decorator
@@ -345,8 +345,8 @@ CogniPy/
 
 ```bash
 # Clone repository
-git clone https://github.com/ChidcGithub/CogniPy.git
-cd CogniPy
+git clone https://github.com/ChidcGithub/Codegnipy.git
+cd Codegnipy
 
 # Create virtual environment
 python -m venv venv
@@ -359,8 +359,8 @@ pip install -e ".[dev]"
 pytest tests/ -v
 
 # Run linting
-ruff check cognipy/
-mypy cognipy/
+ruff check codegnipy/
+mypy codegnipy/
 ```
 
 ## Roadmap
@@ -377,10 +377,10 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Acknowledgments
 
-CogniPy is inspired by the vision of making AI a natural part of programming, bridging the gap between deterministic code and probabilistic intelligence.
+Codegnipy is inspired by the vision of making AI a natural part of programming, bridging the gap between deterministic code and probabilistic intelligence.
 
 ## Links
 
-- [Documentation](https://github.com/ChidcGithub/CogniPy#readme)
-- [Issue Tracker](https://github.com/ChidcGithub/CogniPy/issues)
-- [PyPI Package](https://pypi.org/project/cognipy/)
+- [Documentation](https://github.com/ChidcGithub/Codegnipy#readme)
+- [Issue Tracker](https://github.com/ChidcGithub/Codegnipy/issues)
+- [PyPI Package](https://pypi.org/project/codegnipy/)

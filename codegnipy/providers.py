@@ -1,5 +1,5 @@
 """
-CogniPy 多提供商支持模块
+Codegnipy 多提供商支持模块
 
 支持多种 LLM 提供商：OpenAI、Anthropic、本地模型等。
 """

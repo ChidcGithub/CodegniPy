@@ -1,9 +1,10 @@
 """
-流式响应模块测试
+Codegnipy 流式响应测试模块
 """
 
 import pytest
-from cognipy.streaming import (
+
+from codegnipy.streaming import (
     StreamStatus,
     StreamChunk,
     StreamResult
@@ -64,7 +65,7 @@ class TestStreamingFunctions:
     
     def test_stream_call_signature(self):
         """测试 stream_call 函数签名"""
-        from cognipy.streaming import stream_call
+        from codegnipy.streaming import stream_call
         import inspect
         
         sig = inspect.signature(stream_call)
@@ -76,7 +77,7 @@ class TestStreamingFunctions:
     
     def test_stream_iter_signature(self):
         """测试 stream_iter 函数签名"""
-        from cognipy.streaming import stream_iter
+        from codegnipy.streaming import stream_iter
         import inspect
         
         sig = inspect.signature(stream_iter)

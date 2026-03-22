@@ -1,5 +1,5 @@
 """
-CogniPy 工具调用模块
+Codegnipy 工具调用模块
 
 提供 Function Calling / Tool Use 支持，让 LLM 能够调用外部函数。
 """

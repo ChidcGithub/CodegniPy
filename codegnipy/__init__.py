@@ -1,6 +1,6 @@
-# CogniPy - AI 原生的 Python 语言扩展
+# Codegnipy - AI 原生的 Python 语言扩展
 """
-CogniPy 让非确定性的 AI 能力成为 Python 的一等公民。
+Codegnipy 让非确定性的 AI 能力成为 Python 的一等公民。
 
 核心特性:
 - `~"prompt"` 操作符：将自然语言提示直接嵌入代码

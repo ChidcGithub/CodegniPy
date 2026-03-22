@@ -1,10 +1,10 @@
 """
-CogniPy 测试模块
+Codegnipy 测试模块
 """
 
 import pytest
 import ast
-from cognipy.transformer import CognitiveTransformer, transform_code
+from codegnipy.transformer import CognitiveTransformer, transform_code
 
 
 class TestTransformer:
@@ -94,21 +94,21 @@ z = not True
 class TestIntegration:
     """集成测试"""
     
-    def test_import_cognipy(self):
+    def test_import_codegnipy(self):
         """测试导入模块"""
-        import cognipy
-        assert hasattr(cognipy, "cognitive_call")
-        assert hasattr(cognipy, "CognitiveContext")
-        assert hasattr(cognipy, "cognitive")
+        import codegnipy
+        assert hasattr(codegnipy, "cognitive_call")
+        assert hasattr(codegnipy, "CognitiveContext")
+        assert hasattr(codegnipy, "cognitive")
     
     def test_decorator_import(self):
         """测试装饰器导入"""
-        from cognipy import cognitive
+        from codegnipy import cognitive
         assert callable(cognitive)
     
     def test_context_manager(self):
         """测试上下文管理器"""
-        from cognipy import CognitiveContext
+        from codegnipy import CognitiveContext
         
         with CognitiveContext(model="test-model") as ctx:
             assert ctx.model == "test-model"

@@ -35,7 +35,7 @@ class CognitiveTransformer(ast.NodeTransformer):
         # 构建 cognitive_call(...) 调用
         call = ast.Call(
             func=ast.Attribute(
-                value=ast.Name(id="cognipy", ctx=ast.Load()),
+                value=ast.Name(id="codegnipy", ctx=ast.Load()),
                 attr="cognitive_call",
                 ctx=ast.Load()
             ),
@@ -67,9 +67,9 @@ class CognitiveTransformer(ast.NodeTransformer):
         return self.generic_visit(node)
 
 
-def transform_code(source: str, filename: str = "<cognipy>") -> ast.Module:
+def transform_code(source: str, filename: str = "<codegnipy>") -> ast.Module:
     """
-    转换 CogniPy 源代码，返回转换后的 AST。
+    转换 Codegnipy 源代码，返回转换后的 AST。
     
     参数:
         source: Python 源代码字符串
@@ -81,7 +81,7 @@ def transform_code(source: str, filename: str = "<cognipy>") -> ast.Module:
     示例:
         source = 'result = ~"你好"'
         tree = transform_code(source)
-        # tree 现在包含: result = cognipy.cognitive_call("你好", context=__cognitive_context__)
+        # tree 现在包含: result = codegnipy.cognitive_call("你好", context=__cognitive_context__)
     """
     # 解析源代码
     tree = ast.parse(source, filename=filename)
@@ -96,13 +96,13 @@ def transform_code(source: str, filename: str = "<cognipy>") -> ast.Module:
     return new_tree
 
 
-def compile_cognipy(
+def compile_codegnipy(
     source: str,
-    filename: str = "<cognipy>",
+    filename: str = "<codegnipy>",
     mode: str = "exec"
 ) -> types.CodeType:
     """
-    编译 CogniPy 源代码，返回代码对象。
+    编译 Codegnipy 源代码，返回代码对象。
     
     参数:
         source: Python 源代码字符串
@@ -116,14 +116,14 @@ def compile_cognipy(
     return compile(tree, filename, mode)
 
 
-def exec_cognipy(
+def exec_codegnipy(
     source: str,
     globals_: Optional[dict] = None,
     locals_: Optional[dict] = None,
-    filename: str = "<cognipy>"
+    filename: str = "<codegnipy>"
 ) -> dict:
     """
-    执行 CogniPy 源代码。
+    执行 Codegnipy 源代码。
 
     参数:
         source: Python 源代码字符串
@@ -141,15 +141,15 @@ def exec_cognipy(
     if locals_ is None:
         locals_ = {}
 
-    # 确保 cognipy 模块可用
-    import cognipy
-    globals_['cognipy'] = cognipy
+    # 确保 codegnipy 模块可用
+    import codegnipy
+    globals_['codegnipy'] = codegnipy
 
     # 创建上下文变量
     globals_['__cognitive_context__'] = CognitiveContext.get_current()
 
     # 编译并执行
-    code = compile_cognipy(source, filename)
+    code = compile_codegnipy(source, filename)
     exec(code, globals_, locals_)
 
     return locals_

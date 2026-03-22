@@ -3,7 +3,7 @@
 """
 
 import pytest
-from cognipy.providers import (
+from codegnipy.providers import (
     ProviderType,
     ProviderConfig,
     OpenAIProvider,

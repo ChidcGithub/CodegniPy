@@ -1,5 +1,5 @@
 """
-CogniPy 运行时核心模块
+Codegnipy 运行时核心模块
 
 提供 cognitive_call 函数和 CognitiveContext 上下文管理器。
 """

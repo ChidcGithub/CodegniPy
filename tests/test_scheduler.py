@@ -1,5 +1,5 @@
 """
-CogniPy Phase 3 测试模块
+Codegnipy Phase 3 测试模块
 
 测试异步调度器功能。
 """
@@ -9,7 +9,7 @@ import asyncio
 import time
 from unittest.mock import AsyncMock, patch
 
-from cognipy.scheduler import (
+from codegnipy.scheduler import (
     CognitiveScheduler,
     ScheduledTask,
     TaskStatus,

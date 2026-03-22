@@ -1,5 +1,5 @@
 """
-CogniPy Phase 4 测试模块
+Codegnipy Phase 4 测试模块
 
 测试确定性保证功能。
 """
@@ -8,7 +8,7 @@ import pytest
 import json
 from pydantic import BaseModel
 
-from cognipy.determinism import (
+from codegnipy.determinism import (
     PrimitiveConstraint,
     EnumConstraint,
     SchemaConstraint,
