@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "codegnipy"
-version = "0.1.0"
+version = "0.0.1"
 description = "AI 原生的 Python 语言扩展 - 让非确定性 AI 成为 Python 一等公民"
 readme = "README.md"
 license = {text = "MIT"}

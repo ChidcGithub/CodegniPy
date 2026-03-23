@@ -15,7 +15,7 @@ Codegnipy 让非确定性的 AI 能力成为 Python 的一等公民。
 - 混合执行模型：确定性逻辑与模糊意图的无缝协同
 """
 
-__version__ = "0.2.0"
+__version__ = "0.0.1"
 
 from .runtime import cognitive_call, CognitiveContext
 from .decorator import cognitive
