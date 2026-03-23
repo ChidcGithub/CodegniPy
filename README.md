@@ -2,9 +2,9 @@
 
 [![PyPI version](https://img.shields.io/pypi/v/codegnipy.svg)](https://pypi.org/project/codegnipy/)
 [![Python](https://img.shields.io/pypi/pyversions/codegnipy.svg)](https://pypi.org/project/codegnipy/)
-[![License](https://img.shields.io/github/license/ChidcGithub/Codegnipy)](LICENSE)
-[![Build Status](https://github.com/ChidcGithub/Codegnipy/actions/workflows/ci.yml/badge.svg)](https://github.com/ChidcGithub/Codegnipy/actions/workflows/ci.yml)
-[![Coverage](https://img.shields.io/codecov/c/github/ChidcGithub/Codegnipy.svg)](https://codecov.io/gh/ChidcGithub/Codegnipy)
+[![License](https://img.shields.io/github/license/ChidcGithub/CogniPy)](LICENSE)
+[![Build Status](https://github.com/ChidcGithub/CogniPy/actions/workflows/ci.yml/badge.svg)](https://github.com/ChidcGithub/CogniPy/actions/workflows/ci.yml)
+[![Coverage](https://img.shields.io/codecov/c/github/ChidcGithub/CogniPy.svg)](https://codecov.io/gh/ChidcGithub/CogniPy)
 
 **AI-Native Python Language Extension**
 

@@ -48,9 +48,9 @@ anthropic = [
 codegnipy = "codegnipy.cli:main"
 
 [project.urls]
-Homepage = "https://github.com/ChidcGithub/Codegnipy"
-Documentation = "https://github.com/ChidcGithub/Codegnipy#readme"
-Repository = "https://github.com/ChidcGithub/Codegnipy"
+Homepage = "https://github.com/ChidcGithub/CogniPy"
+Documentation = "https://github.com/ChidcGithub/CogniPy#readme"
+Repository = "https://github.com/ChidcGithub/CogniPy"
 
 [tool.setuptools.packages.find]
 where = ["."]
