@@ -9,6 +9,7 @@ Codegnipy 功能演示
     - 或使用 -k 参数: python -m codegnipy run examples/demo.py -k sk-xxx
 """
 
+import os
 import asyncio
 from pydantic import BaseModel
 from codegnipy import (
@@ -54,24 +55,26 @@ from codegnipy import (
 )
 
 
+def get_api_key() -> str | None:
+    """获取 API key"""
+    return os.environ.get("OPENAI_API_KEY")
+
+
 def demo_basic():
     """基础功能演示"""
     print("\n" + "=" * 50)
-    print("1. 基础功能 - cognitive_call 和 ~ 操作符")
+    print("1. 基础功能 - cognitive_call")
     print("=" * 50)
 
-    # 方式 1: 使用 cognitive_call (需要 API key)
-    try:
+    api_key = get_api_key()
+    if not api_key:
+        print("需要设置 OPENAI_API_KEY 环境变量")
+        return
+
+    with CognitiveContext(api_key=api_key, model="gpt-4o-mini"):
+        # 方式 1: 使用 cognitive_call
         result = cognitive_call("用一句话解释什么是递归")
         print(f"cognitive_call 结果: {result}")
-    except ValueError as e:
-        print("cognitive_call 需要配置 API key")
-        print(f"  错误: {e}")
-
-    # 方式 2: 使用 ~ 操作符 (需要通过 codegnipy run 执行)
-    print("\n~ 操作符示例 (需要通过 codegnipy run 执行):")
-    print('  result = ~"用一句话解释什么是递归"')
-    print('  print(f"结果: {result}")')
 
 
 def demo_decorator():
@@ -79,6 +82,11 @@ def demo_decorator():
     print("\n" + "=" * 50)
     print("2. @cognitive 装饰器 - 让函数由 LLM 实现")
     print("=" * 50)
+
+    api_key = get_api_key()
+    if not api_key:
+        print("需要设置 OPENAI_API_KEY 环境变量")
+        return
 
     @cognitive
     def summarize(text: str) -> str:
@@ -90,10 +98,16 @@ def demo_decorator():
         """将文本翻译成目标语言。"""
         pass
 
-    # 使用模拟模式演示 (实际使用需要 API key)
-    print("定义了两个 cognitive 函数:")
-    print(f"  - summarize(text: str) -> str")
-    print(f"  - translate(text: str, target_lang: str) -> str")
+    with CognitiveContext(api_key=api_key, model="gpt-4o-mini"):
+        # 调用 LLM 实现的函数
+        text = "Python 是一种广泛使用的高级编程语言，由 Guido van Rossum 于 1991 年创建。它以简洁清晰的语法著称，被广泛用于 Web 开发、数据科学、人工智能等领域。"
+        
+        summary = summarize(text)
+        print(f"原文: {text[:50]}...")
+        print(f"摘要: {summary}")
+
+        translated = translate("Hello, World!", target_lang="中文")
+        print(f"翻译: Hello, World! -> {translated}")
 
 
 def demo_memory():
@@ -122,6 +136,17 @@ def demo_memory():
     messages = store.get_all()
     print(f"\n是否需要压缩: {compressor.needs_compression(messages)}")
 
+    # 在上下文中使用记忆
+    api_key = get_api_key()
+    if api_key:
+        print("\n在 CognitiveContext 中使用记忆:")
+        with CognitiveContext(api_key=api_key, model="gpt-4o-mini") as ctx:
+            ctx.memory.add(Message(role=MessageRole.USER, content="我喜欢编程"))
+            ctx.memory.add(Message(role=MessageRole.ASSISTANT, content="太好了！编程是一项很有趣的技能。"))
+            
+            result = cognitive_call("根据之前的对话，我有什么爱好？")
+            print(f"LLM 回答: {result}")
+
 
 def demo_reflection():
     """反思循环演示"""
@@ -129,22 +154,23 @@ def demo_reflection():
     print("4. 反思循环 - LLM 自我检查与修正")
     print("=" * 50)
 
-    # 创建反思器
-    reflector = Reflector()
+    api_key = get_api_key()
+    if not api_key:
+        print("需要设置 OPENAI_API_KEY 环境变量")
+        return
 
-    # 反思示例
-    print("反思器配置:")
-    print(f"  - 最大迭代次数: {reflector.max_iterations}")
-
-    # 使用 with_reflection 函数
-    print("\nwith_reflection 使用示例:")
-    print("""
-    result = with_reflection(
-        "解释量子纠缠",
-        max_iterations=2
-    )
-    print(result.corrected_response or result.original_response)
-    """)
+    with CognitiveContext(api_key=api_key, model="gpt-4o-mini"):
+        result = with_reflection(
+            "请解释量子纠缠现象，要求包含具体例子和日常应用",
+            max_iterations=2
+        )
+        
+        print(f"原始回答: {result.original_response[:200]}...")
+        if result.corrected_response:
+            print(f"修正后回答: {result.corrected_response[:200]}...")
+        print(f"状态: {result.status.value}")
+        if result.issues:
+            print(f"发现的问题: {result.issues}")
 
 
 def demo_scheduler():
@@ -153,28 +179,27 @@ def demo_scheduler():
     print("5. 异步调度 - 高性能并发调用")
     print("=" * 50)
 
-    # 创建调度器
-    config = SchedulerConfig(max_concurrent=5)
-    scheduler = CognitiveScheduler(config)
+    api_key = get_api_key()
+    if not api_key:
+        print("需要设置 OPENAI_API_KEY 环境变量")
+        return
 
-    print("调度器配置:")
-    print(f"  - 最大并发数: {config.max_concurrent}")
-    print(f"  - 默认超时: {config.default_timeout}s")
-
-    # 异步批量调用示例
-    async def demo_async():
+    async def run_batch():
         prompts = [
-            "什么是机器学习？",
-            "什么是深度学习？",
-            "什么是自然语言处理？",
+            "用一句话解释什么是机器学习",
+            "用一句话解释什么是深度学习",
+            "用一句话解释什么是自然语言处理",
         ]
-        # results = await batch_call(prompts)
-        # for prompt, result in zip(prompts, results):
-        #     print(f"  Q: {prompt} -> A: {result[:50]}...")
-        print("  使用 batch_call() 可以并发执行多个 LLM 调用")
-        print(f"  批量调用数量: {len(prompts)}")
+        
+        with CognitiveContext(api_key=api_key, model="gpt-4o-mini"):
+            results = await batch_call(prompts)
+            
+            for prompt, result in zip(prompts, results):
+                print(f"  Q: {prompt}")
+                print(f"  A: {result}")
+                print()
 
-    asyncio.run(demo_async())
+    asyncio.run(run_batch())
 
 
 def demo_determinism():
@@ -189,34 +214,59 @@ def demo_determinism():
         min_value=0,
         max_value=100
     )
-    print(f"整数约束: min={int_constraint.min_value}, max={int_constraint.max_value}")
+    
+    # 验证约束
+    result = int_constraint.validate(50)
+    print(f"整数约束验证 50: {result.status.value}")
+    
+    result = int_constraint.validate(150)
+    print(f"整数约束验证 150: {result.status.value} - {result.errors}")
 
     # 枚举约束
     color_constraint = EnumConstraint(allowed_values=["red", "green", "blue"])
-    print(f"枚举约束: {color_constraint.allowed_values}")
+    result = color_constraint.validate("red")
+    print(f"枚举约束验证 'red': {result.status.value}")
+    
+    result = color_constraint.validate("yellow")
+    print(f"枚举约束验证 'yellow': {result.status.value} - {result.errors}")
 
-    # Schema 约束 (Pydantic)
+    # Schema 约束
     class Person(BaseModel):
         name: str
         age: int
         email: str
 
     schema_constraint = SchemaConstraint(model_class=Person)
-    print(f"Schema 约束: Person(name, age, email)")
+    
+    valid_data = '{"name": "张三", "age": 25, "email": "zhangsan@example.com"}'
+    result = schema_constraint.validate(valid_data)
+    print(f"Schema 验证有效数据: {result.status.value} -> {result.value}")
+
+    invalid_data = '{"name": "张三", "age": "不是数字"}'
+    result = schema_constraint.validate(invalid_data)
+    print(f"Schema 验证无效数据: {result.status.value} - {result.errors}")
 
     # 模拟器
+    print("\n模拟器演示:")
     simulator = Simulator(mode=SimulationMode.MOCK)
-    print(f"\n模拟器模式: {simulator.mode.value}")
+    simulator.set_mock_response("Python", "Python 是一种高级编程语言，以简洁易读著称。")
+    simulated = simulator.get_response("解释一下 Python")
+    print(f"模拟结果: {simulated}")
 
     # 幻觉检测器
+    print("\n幻觉检测:")
     detector = HallucinationDetector()
-    sample_text = "Python 是由 Guido van Rossum 在 1991 年创建的。"
-
-    print(f"\n幻觉检测示例:")
-    print(f"  文本: '{sample_text}'")
-    check = detector.check(sample_text)
-    print(f"  可信度: {check.confidence:.2f}")
-    print(f"  原因: {check.reasons}")
+    
+    sample_texts = [
+        "Python 是由 Guido van Rossum 在 1991 年创建的。",
+        "太阳从西边升起。",
+        "地球是平的，所有的卫星照片都是伪造的。",
+    ]
+    
+    for text in sample_texts:
+        check = detector.check(text)
+        print(f"  '{text[:30]}...'")
+        print(f"    可信度: {check.confidence:.2f}, 是否幻觉: {check.is_hallucination}")
 
 
 def demo_streaming():
@@ -225,12 +275,16 @@ def demo_streaming():
     print("7. 流式响应 - 实时输出支持")
     print("=" * 50)
 
-    print("流式输出示例 (需要 API key 才能运行):")
-    print("""
-    for chunk in stream_iter("写一首关于编程的短诗"):
-        print(chunk.content, end="", flush=True)
-    """)
-    print("\n流式响应适合需要实时反馈的场景")
+    api_key = get_api_key()
+    if not api_key:
+        print("需要设置 OPENAI_API_KEY 环境变量")
+        return
+
+    print("流式输出:")
+    with CognitiveContext(api_key=api_key, model="gpt-4o-mini"):
+        for chunk in stream_iter("写一首关于编程的四行短诗"):
+            print(chunk.content, end="", flush=True)
+        print()  # 换行
 
 
 def demo_tools():
@@ -242,18 +296,27 @@ def demo_tools():
     # 获取全局工具注册表
     registry = get_global_registry()
 
-    # 定义工具并注册到全局注册表
+    # 定义工具并注册
     @registry.register(description="获取指定城市的天气信息")
     def get_weather(city: str) -> str:
         """获取指定城市的天气信息"""
         # 模拟返回
-        return f"{city} 今天晴天，温度 25°C"
+        weather_data = {
+            "北京": "晴天，温度 15°C",
+            "上海": "多云，温度 18°C",
+            "深圳": "小雨，温度 22°C",
+        }
+        return weather_data.get(city, f"{city} 天气信息不可用")
 
-    @registry.register(description="计算数学表达式")
+    @registry.register(description="计算数学表达式，返回计算结果")
     def calculate(expression: str) -> float:
         """计算数学表达式"""
         try:
-            return eval(expression)
+            # 安全计算
+            allowed = set("0123456789+-*/.() ")
+            if all(c in allowed for c in expression):
+                return eval(expression)
+            return 0.0
         except Exception:
             return 0.0
 
@@ -261,66 +324,84 @@ def demo_tools():
     tools = registry.get_openai_tools()
     print(f"已注册的工具数量: {len(tools)}")
 
-    # 显示工具信息
-    for tool_def in tools:
-        func = tool_def["function"]
-        print(f"  - {func['name']}: {func.get('description', '')}")
+    # 测试工具执行
+    print("\n直接执行工具:")
+    print(f"  get_weather('北京'): {get_weather('北京')}")
+    print(f"  calculate('2 + 3 * 4'): {calculate('2 + 3 * 4')}")
 
-    print("\n工具会被 LLM 自动调用以完成任务")
+    # LLM 调用工具
+    api_key = get_api_key()
+    if api_key:
+        print("\n让 LLM 调用工具:")
+        with CognitiveContext(api_key=api_key, model="gpt-4o-mini"):
+            result = call_with_tools(
+                "北京和上海今天的天气怎么样？",
+                tools=tools
+            )
+            print(f"  回答: {result}")
 
 
 def demo_providers():
     """多提供商演示"""
     print("\n" + "=" * 50)
-    print("9. 多提供商支持 - OpenAI、Anthropic、本地模型")
+    print("9. 多提供商支持")
     print("=" * 50)
 
-    # OpenAI
-    print("OpenAI:")
-    print("  provider = create_provider('openai', api_key='sk-...', model='gpt-4')")
-
-    # Anthropic
-    print("Anthropic:")
-    print("  provider = create_provider('anthropic', api_key='sk-ant-...', model='claude-3-opus')")
-
-    # Ollama (本地模型)
-    print("Ollama (本地):")
-    print("  provider = create_provider('ollama', model='llama2', base_url='http://localhost:11434')")
-
-    # HuggingFace (本地模型)
-    print("HuggingFace Transformers (本地):")
-    print("  provider = create_provider('huggingface', model='microsoft/DialoGPT-medium')")
-
-    print("\n支持的提供商类型:")
+    print("支持的提供商类型:")
     for pt in ProviderType:
         print(f"  - {pt.value}")
+
+    # OpenAI Provider
+    api_key = get_api_key()
+    if api_key:
+        print("\n使用 OpenAI Provider:")
+        provider = create_provider("openai", api_key=api_key, model="gpt-4o-mini")
+        
+        messages = [{"role": "user", "content": "用5个字回答：什么是AI？"}]
+        result = provider.call(messages)
+        print(f"  OpenAI 回答: {result}")
+
+    # Ollama Provider (检查是否运行)
+    print("\n检查 Ollama 是否可用:")
+    try:
+        ollama = create_provider("ollama", model="llama2", base_url="http://localhost:11434")
+        models = ollama.list_models()
+        if models:
+            print(f"  可用模型: {models}")
+        else:
+            print("  Ollama 服务未运行或没有模型")
+    except Exception as e:
+        print(f"  Ollama 不可用: {e}")
 
 
 def demo_validation():
     """外部验证演示"""
     print("\n" + "=" * 50)
-    print("10. 外部验证 - 事实核查与验证")
+    print("10. 外部验证 - 事实核查")
     print("=" * 50)
 
     # 创建验证器
     validator = WebSearchValidator()
-    print(f"WebSearchValidator: 使用 DuckDuckGo 进行搜索验证")
+    print(f"WebSearchValidator 状态: {'可用' if validator.is_available() else '不可用'}")
 
     # 验证声明
-    print("\n验证示例 (需要网络才能运行):")
-    print("""
-    result = verify_claim("地球是圆的")
-    print(f"状态: {result.status}")
-    print(f"证据数量: {len(result.evidences)}")
-    for evidence in result.evidences:
-        print(f"  - {evidence.source}: {evidence.snippet[:50]}...")
-    """)
+    claims = [
+        "Python 是在 1991 年发布的",
+        "地球是平的",
+    ]
 
-    print("\n支持的验证器:")
-    print("  - WebSearchValidator: 网络搜索验证")
-    print("  - KnowledgeGraphValidator: 知识图谱查询")
-    print("  - FactCheckValidator: 事实核查 API")
-    print("  - CompositeValidator: 组合多个验证器")
+    for claim in claims:
+        print(f"\n验证: '{claim}'")
+        try:
+            result = verify_claim(claim, validators=["web_search"])
+            print(f"  状态: {result.status.value}")
+            print(f"  可信度: {result.confidence:.2f}")
+            if result.evidences:
+                print(f"  证据数量: {len(result.evidences)}")
+                for ev in result.evidences[:2]:  # 只显示前两个
+                    print(f"    - {ev.source}: {ev.snippet[:50]}...")
+        except Exception as e:
+            print(f"  验证失败: {e}")
 
 
 def demo_context_manager():
@@ -329,21 +410,28 @@ def demo_context_manager():
     print("11. 上下文管理器 - 全局配置")
     print("=" * 50)
 
-    # 使用上下文管理器设置全局配置
-    print("使用 CognitiveContext 设置全局配置:")
-    print("""
-    with CognitiveContext(
-        model="gpt-4",
-        api_key="sk-...",
-        temperature=0.7,
-        max_tokens=2048
-    ):
-        # 所有 cognitive 调用都会使用这些配置
-        result = cognitive_call("你好")
-    """)
+    api_key = get_api_key()
+    if not api_key:
+        print("需要设置 OPENAI_API_KEY 环境变量")
+        return
 
-    # 嵌套上下文
-    print("\n支持嵌套上下文，内层会覆盖外层配置")
+    # 外层上下文
+    with CognitiveContext(api_key=api_key, model="gpt-4o-mini", temperature=0.7):
+        print("外层上下文: model=gpt-4o-mini, temperature=0.7")
+        
+        result1 = cognitive_call("说一个形容词")
+        print(f"  回答 1: {result1}")
+
+        # 嵌套内层上下文
+        with CognitiveContext(model="gpt-4o-mini", temperature=1.5):
+            print("\n内层上下文: temperature=1.5 (更随机)")
+            
+            result2 = cognitive_call("说一个形容词")
+            print(f"  回答 2: {result2}")
+
+        print("\n回到外层上下文")
+        result3 = cognitive_call("再说一个形容词")
+        print(f"  回答 3: {result3}")
 
 
 def main():
@@ -351,6 +439,13 @@ def main():
     print("=" * 50)
     print("Codegnipy 功能演示")
     print("=" * 50)
+
+    api_key = get_api_key()
+    if api_key:
+        print(f"API Key 已设置: {api_key[:10]}...")
+    else:
+        print("警告: 未设置 OPENAI_API_KEY 环境变量")
+        print("部分演示将跳过")
 
     # 基础功能
     demo_basic()
@@ -388,9 +483,6 @@ def main():
     print("\n" + "=" * 50)
     print("演示完成！")
     print("=" * 50)
-    print("\n提示: 部分功能需要 API key 才能正常运行")
-    print("设置环境变量: export OPENAI_API_KEY=sk-xxx")
-    print("或使用参数: python -m codegnipy run demo.py -k sk-xxx")
 
 
 if __name__ == "__main__":
