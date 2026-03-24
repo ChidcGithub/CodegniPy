@@ -558,54 +558,34 @@ class HallucinationDetector:
 # ============ 确定性认知调用 ============
 
 def deterministic_call(
-
     prompt: str,
-
     constraint: TypeConstraint,
-
     context: Optional["CognitiveContext"] = None,
-
     *,
-
     max_attempts: int = 3,
-
     use_reflection: bool = False,
-
     simulator: Optional[Simulator] = None
-
 ) -> ValidationResult:
-
     """
-
     带类型约束的确定性认知调用
 
-
-
     参数:
-
         prompt: 提示文本
-
         constraint: 类型约束
-
         context: 认知上下文
-
         max_attempts: 最大尝试次数
-
         use_reflection: 是否使用反思
-
         simulator: 模拟器（用于测试）
 
     返回:
-
         ValidationResult 对象
-
     """
     from .runtime import cognitive_call
     from .reflection import with_reflection
-    
+
     # 构建带约束的提示
     constrained_prompt = f"{prompt}\n\n约束: {constraint.to_prompt()}\n\n请严格按照约束要求回答。"
-    
+
     for attempt in range(max_attempts):
         # 获取响应
         if simulator and simulator.mode != SimulationMode.OFF:
@@ -616,16 +596,20 @@ def deterministic_call(
                 response = result.corrected_response or result.original_response
             else:
                 response = cognitive_call(constrained_prompt, context)
-        
+
         # 验证响应
         validation = constraint.validate(response)
-        
+
         if validation.status == ValidationStatus.VALID:
             return validation
-        
+
         # 如果验证失败，添加反馈并重试
         if attempt < max_attempts - 1:
             error_feedback = "; ".join(validation.errors)
-            constrained_prompt = f"{prompt}\n\n约束: {constraint.to_prompt()}\n\n上次的回答不符合要求，错误: {error_feedback}\n\n请修正后重新回答。"
-    
+            constrained_prompt = (
+                f"{prompt}\n\n约束: {constraint.to_prompt()}\n\n"
+                f"上次的回答不符合要求，错误: {error_feedback}\n\n"
+                f"请修正后重新回答。"
+            )
+
     return validation

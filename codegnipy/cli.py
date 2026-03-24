@@ -43,6 +43,10 @@ def create_parser() -> argparse.ArgumentParser:
         default="gpt-4o-mini",
         help="使用的 LLM 模型"
     )
+    repl_parser.add_argument(
+        "--api-key", "-k",
+        help="API 密钥（也可通过环境变量 OPENAI_API_KEY 设置）"
+    )
     
     # version 命令
     subparsers.add_parser("version", help="显示版本信息")
@@ -86,17 +90,17 @@ def run_file(filepath: str, model: str, api_key: Optional[str] = None):
             sys.exit(1)
 
 
-def start_repl(model: str):
+def start_repl(model: str, api_key: Optional[str] = None):
     """启动交互式 REPL"""
     import code
-    
+
     print("Codegnipy REPL")
     print(f"模型: {model}")
     print("输入 Python 代码，~\"prompt\" 语法将调用 LLM")
     print("输入 exit() 或 Ctrl+D 退出\n")
-    
+
     # 创建上下文
-    ctx = CognitiveContext(model=model)
+    ctx = CognitiveContext(model=model, api_key=api_key)
     ctx.__enter__()
     
     # 准备 REPL 环境
@@ -137,11 +141,11 @@ def main():
     """主入口"""
     parser = create_parser()
     args = parser.parse_args()
-    
+
     if args.command == "run":
         run_file(args.file, args.model, args.api_key)
     elif args.command == "repl":
-        start_repl(args.model)
+        start_repl(args.model, getattr(args, 'api_key', None))
     elif args.command == "version":
         print(f"Codegnipy v{codegnipy.__version__}")
     else:

@@ -43,6 +43,9 @@ dev = [
 anthropic = [
     "anthropic>=0.18.0",
 ]
+http = [
+    "aiohttp>=3.8.0",
+]
 
 [project.scripts]
 codegnipy = "codegnipy.cli:main"

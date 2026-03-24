@@ -563,16 +563,18 @@ class FactCheckValidator(BaseValidator):
     
     API_URL = "https://factchecktools.googleapis.com/v1alpha1/claims:search"
     
-    def __init__(self, api_key: Optional[str] = None, timeout: float = 10.0):
+    def __init__(self, api_key: Optional[str] = None, timeout: float = 10.0, max_results: int = 5):
         """
         初始化事实核查验证器
         
         参数:
             api_key: Google Fact Check API 密钥
             timeout: 请求超时时间
+            max_results: 最大返回结果数
         """
         self.api_key = api_key
         self.timeout = timeout
+        self.max_results = max_results
     
     @property
     def name(self) -> str:
@@ -611,7 +613,7 @@ class FactCheckValidator(BaseValidator):
             evidences = []
             claims = data.get("claims", [])
             
-            for claim_data in claims[:self.max_results if hasattr(self, 'max_results') else 5]:
+            for claim_data in claims[:self.max_results]:
                 claim_review = claim_data.get("claimReview", [])
                 for review in claim_review:
                     rating = review.get("textualRating", "")

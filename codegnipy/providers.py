@@ -23,6 +23,7 @@ class ProviderType(Enum):
     ANTHROPIC = "anthropic"
     OLLAMA = "ollama"
     HUGGINGFACE = "huggingface"
+    LLAMACPP = "llamacpp"
     CUSTOM = "custom"
 
 
@@ -1078,6 +1079,350 @@ class TransformersProvider(BaseProvider):
         }
 
 
+class LlamaCppProvider(BaseProvider):
+    """llama.cpp 本地模型提供商
+    
+    使用 llama-cpp-python 库运行 GGUF 格式的量化模型。
+    支持各种量化级别 (Q4_0, Q4_K_M, Q5_K_M, Q8_0 等)。
+    
+    使用示例:
+        config = ProviderConfig(
+            provider_type=ProviderType.LLAMACPP,
+            model="path/to/model.gguf",
+            extra_params={
+                "n_ctx": 4096,        # 上下文长度
+                "n_gpu_layers": 35,   # GPU 层数 (0 = CPU only, -1 = all)
+                "n_threads": 4,       # CPU 线程数
+            }
+        )
+        provider = LlamaCppProvider(config)
+    """
+    
+    def __init__(self, config: ProviderConfig):
+        super().__init__(config)
+        self._llama = None
+        self._model_path = config.model
+        self._n_ctx = config.extra_params.get("n_ctx", 4096)
+        self._n_gpu_layers = config.extra_params.get("n_gpu_layers", 0)
+        self._n_threads = config.extra_params.get("n_threads", 4)
+        self._verbose = config.extra_params.get("verbose", False)
+    
+    def _load_model(self):
+        """延迟加载模型"""
+        if self._llama is not None:
+            return
+        
+        try:
+            from llama_cpp import Llama
+        except ImportError:
+            raise ImportError(
+                "需要安装 llama-cpp-python。运行: pip install llama-cpp-python\n"
+                "GPU 支持: CMAKE_ARGS=\"-DLLAMA_CUBLAS=on\" pip install llama-cpp-python"
+            )
+        
+        if not self._model_path:
+            raise ValueError("需要提供 GGUF 模型路径 (model 参数)")
+        
+        try:
+            self._llama = Llama(
+                model_path=self._model_path,
+                n_ctx=self._n_ctx,
+                n_gpu_layers=self._n_gpu_layers,
+                n_threads=self._n_threads,
+                verbose=self._verbose
+            )
+        except Exception as e:
+            raise RuntimeError(f"加载 llama.cpp 模型失败: {e}")
+    
+    def _convert_messages(self, messages: List[Dict[str, str]]) -> str:
+        """将消息转换为提示词"""
+        prompt_parts = []
+        
+        for msg in messages:
+            role = msg["role"]
+            content = msg["content"]
+            
+            if role == "system":
+                prompt_parts.append(f"<|system|>\n{content}</s>\n")
+            elif role == "user":
+                prompt_parts.append(f"<|user|>\n{content}</s>\n")
+            elif role == "assistant":
+                prompt_parts.append(f"<|assistant|)\n{content}</s>\n")
+        
+        prompt_parts.append("<|assistant|)\n")
+        return "".join(prompt_parts)
+    
+    def _format_chat(self, messages: List[Dict[str, str]]) -> List[Dict[str, str]]:
+        """格式化消息为 llama.cpp chat 格式"""
+        formatted = []
+        for msg in messages:
+            if msg["role"] in ("system", "user", "assistant"):
+                formatted.append({
+                    "role": msg["role"],
+                    "content": msg["content"]
+                })
+        return formatted
+    
+    def call(
+        self,
+        messages: List[Dict[str, str]],
+        **kwargs
+    ) -> str:
+        self._load_model()
+        
+        assert self._llama is not None
+        
+        # 使用 chat completion API (如果模型支持)
+        try:
+            formatted_messages = self._format_chat(messages)
+            response = self._llama.create_chat_completion(
+                messages=formatted_messages,
+                temperature=kwargs.get("temperature", self.config.temperature),
+                max_tokens=kwargs.get("max_tokens", self.config.max_tokens),
+            )
+            return response["choices"][0]["message"]["content"]
+        except Exception:
+            # 回退到 completion API
+            prompt = self._convert_messages(messages)
+            response = self._llama(
+                prompt=prompt,
+                temperature=kwargs.get("temperature", self.config.temperature),
+                max_tokens=kwargs.get("max_tokens", self.config.max_tokens),
+            )
+            return response["choices"][0]["text"]
+    
+    def stream(
+        self,
+        messages: List[Dict[str, str]],
+        **kwargs
+    ) -> Iterator[StreamChunk]:
+        self._load_model()
+        
+        assert self._llama is not None
+        
+        accumulated = ""
+        yield StreamChunk(content="", status=StreamStatus.STARTED, accumulated="")
+        
+        try:
+            formatted_messages = self._format_chat(messages)
+            
+            for chunk in self._llama.create_chat_completion(
+                messages=formatted_messages,
+                temperature=kwargs.get("temperature", self.config.temperature),
+                max_tokens=kwargs.get("max_tokens", self.config.max_tokens),
+                stream=True,
+            ):
+                if "content" in chunk["choices"][0].get("delta", {}):
+                    content = chunk["choices"][0]["delta"]["content"]
+                    accumulated += content
+                    yield StreamChunk(
+                        content=content,
+                        status=StreamStatus.STREAMING,
+                        accumulated=accumulated
+                    )
+        except Exception:
+            # 回退到 completion API
+            prompt = self._convert_messages(messages)
+            
+            for chunk in self._llama(
+                prompt=prompt,
+                temperature=kwargs.get("temperature", self.config.temperature),
+                max_tokens=kwargs.get("max_tokens", self.config.max_tokens),
+                stream=True,
+            ):
+                if "text" in chunk["choices"][0]:
+                    content = chunk["choices"][0]["text"]
+                    accumulated += content
+                    yield StreamChunk(
+                        content=content,
+                        status=StreamStatus.STREAMING,
+                        accumulated=accumulated
+                    )
+        
+        yield StreamChunk(content="", status=StreamStatus.COMPLETED, accumulated=accumulated)
+    
+    async def call_async(
+        self,
+        messages: List[Dict[str, str]],
+        **kwargs
+    ) -> str:
+        import asyncio
+        loop = asyncio.get_event_loop()
+        return await loop.run_in_executor(
+            None,
+            lambda: self.call(messages, **kwargs)
+        )
+    
+    async def stream_async(
+        self,
+        messages: List[Dict[str, str]],
+        **kwargs
+    ) -> AsyncIterator[StreamChunk]:
+        for chunk in self.stream(messages, **kwargs):
+            yield chunk
+            await asyncio.sleep(0)
+    
+    def call_with_tools(
+        self,
+        messages: List[Dict[str, str]],
+        tools: List[dict],
+        **kwargs
+    ) -> Dict[str, Any]:
+        # 通过提示词模拟工具调用
+        tool_descriptions = []
+        for tool in tools:
+            if tool.get("type") == "function":
+                func = tool["function"]
+                desc = f"- {func['name']}: {func.get('description', 'No description')}"
+                if "parameters" in func:
+                    desc += f"\n  Parameters: {json.dumps(func['parameters'])}"
+                tool_descriptions.append(desc)
+        
+        tool_prompt = "\n".join(tool_descriptions)
+        enhanced_messages = messages + [{
+            "role": "system",
+            "content": f"\n\nAvailable tools:\n{tool_prompt}\n\nTo use a tool, respond with a JSON object."
+        }]
+        
+        response = self.call(enhanced_messages, **kwargs)
+        
+        tool_calls = None
+        try:
+            import re
+            json_match = re.search(r'\{[\s\S]*\}', response)
+            if json_match:
+                parsed = json.loads(json_match.group())
+                if "name" in parsed or "function" in parsed:
+                    tool_calls = [{
+                        "id": f"call_{hash(response) % 10000}",
+                        "type": "function",
+                        "function": {
+                            "name": parsed.get("name") or parsed.get("function"),
+                            "arguments": json.dumps(parsed.get("arguments", parsed))
+                        }
+                    }]
+        except (json.JSONDecodeError, KeyError):
+            pass
+        
+        return {
+            "content": response,
+            "tool_calls": tool_calls,
+            "message": response
+        }
+    
+    def get_model_info(self) -> Dict[str, Any]:
+        """获取模型信息"""
+        self._load_model()
+        assert self._llama is not None
+        
+        return {
+            "n_ctx": self._n_ctx,
+            "n_vocab": self._llama.n_vocab(),
+            "n_ctx_train": self._llama.n_ctx_train(),
+            "n_embd": self._llama.n_embd(),
+            "n_layer": self._llama.n_layer(),
+        }
+
+
+class QuantizationConfig:
+    """量化配置
+    
+    用于配置模型量化参数，支持多种量化方法。
+    
+    使用示例:
+        config = QuantizationConfig(
+            method="q4_k_m",
+            bits=4,
+            group_size=128,
+        )
+    """
+    
+    # 支持的量化方法
+    QUANTIZATION_METHODS = {
+        "q4_0": {"bits": 4, "description": "4-bit, 32g group size, fast"},
+        "q4_1": {"bits": 4, "description": "4-bit, 32g group size, with scale"},
+        "q4_k_m": {"bits": 4, "description": "4-bit K-quants, medium quality"},
+        "q4_k_s": {"bits": 4, "description": "4-bit K-quants, small"},
+        "q5_0": {"bits": 5, "description": "5-bit, 32g group size"},
+        "q5_1": {"bits": 5, "description": "5-bit, 32g group size, with scale"},
+        "q5_k_m": {"bits": 5, "description": "5-bit K-quants, medium quality"},
+        "q5_k_s": {"bits": 5, "description": "5-bit K-quants, small"},
+        "q6_k": {"bits": 6, "description": "6-bit K-quants"},
+        "q8_0": {"bits": 8, "description": "8-bit, 32g group size, high quality"},
+        "fp16": {"bits": 16, "description": "16-bit floating point"},
+        "fp32": {"bits": 32, "description": "32-bit floating point"},
+    }
+    
+    def __init__(
+        self,
+        method: str = "q4_k_m",
+        bits: Optional[int] = None,
+        group_size: Optional[int] = None,
+        activation_bits: Optional[int] = None,
+    ):
+        """
+        初始化量化配置
+        
+        参数:
+            method: 量化方法名称 (q4_0, q4_k_m, q5_k_m, q8_0 等)
+            bits: 量化位数 (可选，从 method 自动推断)
+            group_size: 量化组大小
+            activation_bits: 激活量化位数
+        """
+        self.method = method.lower()
+        
+        if self.method not in self.QUANTIZATION_METHODS:
+            raise ValueError(
+                f"Unknown quantization method: {method}. "
+                f"Supported: {list(self.QUANTIZATION_METHODS.keys())}"
+            )
+        
+        method_info = self.QUANTIZATION_METHODS[self.method]
+        self.bits = bits or method_info["bits"]
+        self.description = method_info["description"]
+        self.group_size = group_size
+        self.activation_bits = activation_bits
+    
+    def to_dict(self) -> Dict[str, Any]:
+        """转换为字典"""
+        return {
+            "method": self.method,
+            "bits": self.bits,
+            "group_size": self.group_size,
+            "activation_bits": self.activation_bits,
+            "description": self.description,
+        }
+    
+    @classmethod
+    def list_methods(cls) -> Dict[str, Dict[str, Any]]:
+        """列出所有支持的量化方法"""
+        return cls.QUANTIZATION_METHODS.copy()
+    
+    def estimate_memory(
+        self,
+        model_params: int,
+        bytes_per_param: float = 2.0  # fp16
+    ) -> Dict[str, float]:
+        """
+        估算量化后的内存占用
+        
+        参数:
+            model_params: 模型参数数量
+            bytes_per_param: 原始每参数字节数
+        
+        返回:
+            包含原始和量化后内存占用的字典
+        """
+        original_mb = (model_params * bytes_per_param) / (1024 * 1024)
+        quantized_mb = (model_params * (self.bits / 8)) / (1024 * 1024)
+        
+        return {
+            "original_mb": original_mb,
+            "quantized_mb": quantized_mb,
+            "compression_ratio": original_mb / quantized_mb if quantized_mb > 0 else 1.0,
+        }
+
+
 class ProviderFactory:
     """提供商工厂"""
     
@@ -1086,6 +1431,7 @@ class ProviderFactory:
         ProviderType.ANTHROPIC: AnthropicProvider,
         ProviderType.OLLAMA: OllamaProvider,
         ProviderType.HUGGINGFACE: TransformersProvider,
+        ProviderType.LLAMACPP: LlamaCppProvider,
     }
     
     @classmethod
@@ -1142,6 +1488,8 @@ def create_provider(
         "anthropic": ProviderType.ANTHROPIC,
         "ollama": ProviderType.OLLAMA,
         "huggingface": ProviderType.HUGGINGFACE,
+        "llamacpp": ProviderType.LLAMACPP,
+        "llama.cpp": ProviderType.LLAMACPP,
         "custom": ProviderType.CUSTOM,
     }
     

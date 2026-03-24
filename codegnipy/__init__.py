@@ -88,6 +88,8 @@ from .providers import (
     AnthropicProvider,
     OllamaProvider,
     TransformersProvider,
+    LlamaCppProvider,
+    QuantizationConfig,
     ProviderFactory,
     create_provider
 )
@@ -103,6 +105,22 @@ from .validation import (
     create_default_validator,
     verify_claim,
     verify_claim_async
+)
+from .observability import (
+    LogLevel,
+    MetricType,
+    SpanContext,
+    Metric,
+    CognitiveLogger,
+    MetricsCollector,
+    Tracer,
+    OpenTelemetryExporter,
+    ObservabilityManager,
+    traced,
+    logged,
+    metered,
+    get_default_manager,
+    configure_observability,
 )
 
 __all__ = [
@@ -173,6 +191,8 @@ __all__ = [
     "AnthropicProvider",
     "OllamaProvider",
     "TransformersProvider",
+    "LlamaCppProvider",
+    "QuantizationConfig",
     "ProviderFactory",
     "create_provider",
     # Validation
@@ -187,4 +207,19 @@ __all__ = [
     "create_default_validator",
     "verify_claim",
     "verify_claim_async",
+    # Observability
+    "LogLevel",
+    "MetricType",
+    "SpanContext",
+    "Metric",
+    "CognitiveLogger",
+    "MetricsCollector",
+    "Tracer",
+    "OpenTelemetryExporter",
+    "ObservabilityManager",
+    "traced",
+    "logged",
+    "metered",
+    "get_default_manager",
+    "configure_observability",
 ]

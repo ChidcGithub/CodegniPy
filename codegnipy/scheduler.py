@@ -58,9 +58,9 @@ class ScheduledTask(Generic[T]):
     max_retries: int = field(default=3, compare=False)
     timeout: Optional[float] = field(default=None, compare=False)
     callback: Optional[Callable[[T], None]] = field(default=None, compare=False, repr=False)
-    
-    def __post_init__(self):
-        self._async_task: Optional[asyncio.Task] = None
+    # 运行时属性
+    _async_task: Optional[asyncio.Task] = field(default=None, compare=False, repr=False, init=False)
+    _current_coro: Optional[Coroutine] = field(default=None, compare=False, repr=False, init=False)
     
     def create_coro(self) -> Coroutine:
         """创建新的协程实例"""
@@ -189,7 +189,7 @@ class CognitiveScheduler:
         )
 
         # 存储初始协程
-        task._current_coro = coro  # type: ignore[attr-defined]
+        task._current_coro = coro
 
         self._tasks[task_id] = task
         assert self._pending_queue is not None
@@ -278,7 +278,7 @@ class CognitiveScheduler:
         task.status = TaskStatus.PENDING
 
         # 创建新的协程实例
-        task._current_coro = task.create_coro()  # type: ignore[attr-defined]
+        task._current_coro = task.create_coro()
 
         # 等待延迟
         delay = self.config.retry_policy.get_delay(task.retries - 1)

@@ -7,6 +7,7 @@ Codegnipy 运行时核心模块
 from dataclasses import dataclass, field
 from typing import Optional, TYPE_CHECKING
 import os
+import threading
 
 if TYPE_CHECKING:
     from .memory import MemoryStore
@@ -20,6 +21,19 @@ class LLMConfig:
     base_url: Optional[str] = None
     temperature: float = 0.7
     max_tokens: int = 1024
+
+
+# 全局上下文锁，用于保护共享资源
+_context_lock = threading.Lock()
+# 使用线程本地存储来支持多线程环境
+_context_local = threading.local()
+
+
+def _get_context_stack() -> list:
+    """获取当前线程的上下文栈"""
+    if not hasattr(_context_local, 'stack'):
+        _context_local.stack = []
+    return _context_local.stack
 
 
 @dataclass
@@ -45,9 +59,6 @@ class CognitiveContext:
     # 内部状态
     _is_active: bool = field(default=False, repr=False, init=False)
     
-    # 全局上下文引用
-    _current: Optional['CognitiveContext'] = field(default=None, repr=False, init=False)
-    
     def __post_init__(self):
         """初始化记忆存储"""
         if self.memory_store is None:
@@ -56,18 +67,22 @@ class CognitiveContext:
     
     def __enter__(self) -> 'CognitiveContext':
         self._is_active = True
-        CognitiveContext._current = self
+        stack = _get_context_stack()
+        stack.append(self)
         return self
     
     def __exit__(self, exc_type, exc_val, exc_tb):
         self._is_active = False
-        CognitiveContext._current = None
+        stack = _get_context_stack()
+        if stack and stack[-1] is self:
+            stack.pop()
         return False
     
     @classmethod
     def get_current(cls) -> Optional['CognitiveContext']:
         """获取当前活动上下文"""
-        return cls._current
+        stack = _get_context_stack()
+        return stack[-1] if stack else None
     
     def get_config(self) -> LLMConfig:
         """获取 LLM 配置"""
